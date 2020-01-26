@@ -3,7 +3,12 @@ const mongodb = require ("mongodb");
 const port = 3000;
 
 const app = express();
+
+app.use(express.static('public'));
+
 let db
+
+
  
 const connectionString = 'mongodb+srv://todoAppUser:XV0yvbiGM8a8r1wf@cluster0-culjg.mongodb.net/TodoApp?retryWrites=true&w=majority';
 //const connectionString = 'mongodb://127.0.0.1:27017'
@@ -17,12 +22,11 @@ mongodb.connect(connectionString, {useNewUrlParser:true, useUnifiedTopology: tru
     })
   }
 });
-
+app.use(express.json());
 app.use(express.urlencoded({extended:false}));
 
 app.get('/', function(req, res){
   db.collection('items').find().toArray(function(err, items){
-    console.log(items[0].text);
     res.send(`
     <!DOCTYPE html>
     <html>
@@ -51,16 +55,16 @@ app.get('/', function(req, res){
             <li class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
             <span class="item-text">${item.text}</span>
             <div>
-              <button class="edit-me btn btn-secondary btn-sm mr-1">Edit</button>
+              <button data-id="${item._id}" class="edit-me btn btn-secondary btn-sm mr-1">Edit</button>
               <button class="delete-me btn btn-danger btn-sm">Delete</button>
             </div>
           </li>
             `
           }).join('')}
         </ul>
-        
       </div>
-      
+        <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+        <script type="text/javascript" src="/browser.js"></script>
     </body>
     </html>
     `)
@@ -71,4 +75,11 @@ app.post('/create-item', (req, res)=>{
   db.collection('items').insertOne({text:req.body.item}, function(){
     res.redirect('/');
   })
+}); 
+
+app.post('/update-item', function(req, res){
+ db.collection('items').findOneAndUpdate({_id: new mongodb.ObjectID(req.body.id)}, {$set:{text:req.body.text}}, function(){
+  res.send("Success")
+ });
+
 });
