@@ -1,33 +1,51 @@
-const express = require ("express");
-const mongodb = require ("mongodb");
-const port = 3000;
+const express = require("express");
+const mongodb = require("mongodb");
+const sanitizeHTML = require("sanitize-html");
 
+const port = 3000;
 const app = express();
 
-app.use(express.static('public'));
+app.use(express.static("public"));
 
-let db
+let db;
 
-
- 
-const connectionString = 'mongodb+srv://todoAppUser:XV0yvbiGM8a8r1wf@cluster0-culjg.mongodb.net/TodoApp?retryWrites=true&w=majority';
+const connectionString =
+  "mongodb+srv://todoAppUser:XV0yvbiGM8a8r1wf@cluster0-culjg.mongodb.net/TodoApp?retryWrites=true&w=majority";
 //const connectionString = 'mongodb://127.0.0.1:27017'
-mongodb.connect(connectionString, {useNewUrlParser:true, useUnifiedTopology: true}, function(err, client){
-  if(err){
-    console.log(err)
-  }else{
-    db = client.db()
-    app.listen(port, function(){
-      console.log(`We are running on ${port} port!`)
-    })
+mongodb.connect(
+  connectionString,
+  { useNewUrlParser: true, useUnifiedTopology: true },
+  function(err, client) {
+    if (err) {
+      console.log(err);
+    } else {
+      db = client.db();
+      app.listen(port, function() {
+        console.log(`We are running on ${port} port!`);
+      });
+    }
   }
-});
+);
 app.use(express.json());
-app.use(express.urlencoded({extended:false}));
+app.use(express.urlencoded({ extended: false }));
 
-app.get('/', function(req, res){
-  db.collection('items').find().toArray(function(err, items){
-    res.send(`
+function passwordProtected(req, res, next) {
+  res.set("WWW-Authenticate", 'Basic realm = "SimpleTodo App"');
+  
+  if (req.headers.authorization == "Basic bGVhcm46amF2YXNjcmlwdA==") {
+    next();
+  } else {
+    res.status(401).send("Authenctication required");
+  }
+}
+
+app.use(passwordProtected);
+
+app.get("/", passwordProtected, function(req, res) {
+  db.collection("items")
+    .find()
+    .toArray(function(err, items) {
+      res.send(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -62,26 +80,35 @@ app.get('/', function(req, res){
         <script type="text/javascript" src="/browser.js"></script>
     </body>
     </html>
-    `)
-  });
+    `);
+    });
 });
 
 app.post('/create-item', (req, res)=>{
-  if(req.body.text != ""){
-    db.collection('items').insertOne({text:req.body.text}, function(err, info){
+  let safeText = sanitizeHTML(req.body.text, {allowedTags:[], allowedAttributes:{}});
+  if(safeText != ""){
+    db.collection('items').insertOne({text:safeText}, function(err, info){
       res.json(info.ops[0]);
     }) 
   }
 }); 
 
-app.post('/update-item', function(req, res){
- db.collection('items').findOneAndUpdate({_id: new mongodb.ObjectID(req.body.id)}, {$set:{text:req.body.text}}, function(){
-  res.send("Success")
- });
+app.post("/update-item", function(req, res) {
+  let safeText = sanitizeHTML(req.body.text, {allowedTags:[], allowedAttributes:{}});
+  db.collection("items").findOneAndUpdate(
+    { _id: new mongodb.ObjectID(req.body.id) },
+    { $set: { text: safeText} },
+    function() {
+      res.send("Success");
+    }
+  );
 });
 
-app.post('/delete-item', function(req, res){
-  db.collection('items').deleteOne({_id: new mongodb.ObjectID(req.body.id)}, function(){
-    res.send("Success");
-  });
+app.post("/delete-item", function(req, res) {
+  db.collection("items").deleteOne(
+    { _id: new mongodb.ObjectID(req.body.id) },
+    function() {
+      res.send("Success");
+    }
+  );
 });
