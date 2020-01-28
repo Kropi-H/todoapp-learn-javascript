@@ -67,9 +67,11 @@ app.get('/', function(req, res){
 });
 
 app.post('/create-item', (req, res)=>{
-  db.collection('items').insertOne({text:req.body.text}, function(err, info){
-    res.json(info.ops[0]);
-  })
+  if(req.body.text != ""){
+    db.collection('items').insertOne({text:req.body.text}, function(err, info){
+      res.json(info.ops[0]);
+    }) 
+  }
 }); 
 
 app.post('/update-item', function(req, res){
