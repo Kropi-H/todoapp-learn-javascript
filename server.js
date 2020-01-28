@@ -2,7 +2,11 @@ const express = require("express");
 const mongodb = require("mongodb");
 const sanitizeHTML = require("sanitize-html");
 
-const port = 3000;
+let port = process.env.PORT;
+if(port == null || port == ""){
+port = 3000
+};
+
 const app = express();
 
 app.use(express.static("public"));
