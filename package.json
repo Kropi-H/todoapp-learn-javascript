@@ -9,7 +9,7 @@
     "mongodb": "^3.5.2",
     "nodemon": "^2.0.2",
     "path": "^0.12.7",
-    "sanitize-html": "^1.21.1"
+    "sanitize-html": "^2.3.2"
   },
   "devDependencies": {},
   "scripts": {
